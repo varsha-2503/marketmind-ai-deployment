@@ -1,4 +1,3 @@
-
 import os
 import json
 import re
@@ -21,7 +20,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize
 
-from database import engine
+from database import engine, Base
 from models import User, Role, SalesTransaction, Transaction, Customer
 from schemas import (
     UserCreate,
@@ -46,13 +45,6 @@ app = FastAPI(title="MarketMind AI API")
 # ---------------------------------------------------------------------------
 # CORS configuration
 # ---------------------------------------------------------------------------
-# Configure CORS_ORIGINS in docker-compose.yml or the environment.
-# Example:
-# CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-#
-# Origins must match the browser's frontend origin, including the port.
-# Do not use "*" together with allow_credentials=True.
-
 _default_origins = (
     "http://localhost:5173,"
     "http://127.0.0.1:5173"
@@ -101,7 +93,6 @@ def database_error_handler(request: Request, exc: SQLAlchemyError):
 # ---------------------------------------------------------------------------
 # Paths and database dependency
 # ---------------------------------------------------------------------------
-# backend/ and ml/ are expected to be sibling directories.
 REPORT_DIR = Path(__file__).resolve().parent.parent / "ml" / "outputs"
 
 RETAIL_DATA = (
@@ -664,7 +655,14 @@ def recommend_products(
 
 
 @app.on_event("startup")
-def warm_recommendation_engine():
+def on_startup():
+    # Automatically create tables in the connected database on startup
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables verified/created successfully.")
+    except Exception:
+        logger.exception("Failed to initialize database tables on startup.")
+
     def _warm():
         try:
             get_rec_engine()
