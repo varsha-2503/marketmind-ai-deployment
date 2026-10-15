@@ -4,7 +4,8 @@ import M3Panels from "./M3Panels";
 
 function formatDetail(detail, status) {
   if (typeof detail === "string") return detail;
-  if (Array.isArray(detail)) return "Please check the value you entered and try again.";
+  if (Array.isArray(detail))
+    return "Please check the value you entered and try again.";
   return `Request failed (${status})`;
 }
 
@@ -22,8 +23,9 @@ function App() {
   const [dashboardError, setDashboardError] = useState("");
   const [loadingDashboard, setLoadingDashboard] = useState(false);
 
-  const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
-
+  const API =
+    import.meta.env.VITE_API_URL ||
+    "https://marketmind-ai-deployment-1.onrender.com";
   async function apiFetch(endpoint, accessToken, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -45,8 +47,14 @@ function App() {
       }
       return body;
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("The server took too long to respond. Please try again.");
-      if (error instanceof TypeError) throw new Error("Couldn't reach the server. Check that the backend is running.");
+      if (error.name === "AbortError")
+        throw new Error(
+          "The server took too long to respond. Please try again.",
+        );
+      if (error instanceof TypeError)
+        throw new Error(
+          "Couldn't reach the server. Check that the backend is running.",
+        );
       throw error;
     } finally {
       clearTimeout(timeoutId);
@@ -109,29 +117,57 @@ function App() {
         ]);
         if (!active) return;
 
-        const [sales, summaryResult, transactions, segmentResult, forecastResult] = results;
+        const [
+          sales,
+          summaryResult,
+          transactions,
+          segmentResult,
+          forecastResult,
+        ] = results;
         setSalesData(sales.status === "fulfilled" ? sales.value : []);
-        setSummary(summaryResult.status === "fulfilled" ? summaryResult.value : null);
-        setMyTransactions(transactions.status === "fulfilled" ? transactions.value : []);
-        setSegments(segmentResult.status === "fulfilled" && Array.isArray(segmentResult.value) ? segmentResult.value : []);
-        setForecast(forecastResult.status === "fulfilled" ? forecastResult.value : null);
+        setSummary(
+          summaryResult.status === "fulfilled" ? summaryResult.value : null,
+        );
+        setMyTransactions(
+          transactions.status === "fulfilled" ? transactions.value : [],
+        );
+        setSegments(
+          segmentResult.status === "fulfilled" &&
+            Array.isArray(segmentResult.value)
+            ? segmentResult.value
+            : [],
+        );
+        setForecast(
+          forecastResult.status === "fulfilled" ? forecastResult.value : null,
+        );
 
-        const rejected = results.filter((result) => result.status === "rejected");
+        const rejected = results.filter(
+          (result) => result.status === "rejected",
+        );
         if (rejected.some((result) => result.reason?.status === 401)) {
           expireSession();
           return;
         }
-        const failures = rejected.filter((result) => result.reason?.status !== 403);
+        const failures = rejected.filter(
+          (result) => result.reason?.status !== 403,
+        );
         if (failures.length > 0) {
-          const reasons = [...new Set(failures.map((f) => f.reason?.message).filter(Boolean))];
-          setDashboardError(`Some dashboard sections couldn't load: ${reasons.join("; ")}`);
+          const reasons = [
+            ...new Set(failures.map((f) => f.reason?.message).filter(Boolean)),
+          ];
+          setDashboardError(
+            `Some dashboard sections couldn't load: ${reasons.join("; ")}`,
+          );
         }
       } catch (error) {
         if (active) {
           if (error.status === 401) {
             expireSession();
           } else {
-            setDashboardError(error.message || "Couldn't load your dashboard. Please sign in again.");
+            setDashboardError(
+              error.message ||
+                "Couldn't load your dashboard. Please sign in again.",
+            );
             setCurrentUser(null);
           }
         }
@@ -141,7 +177,9 @@ function App() {
     }
 
     loadDashboard();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   function renderMainPanel() {
@@ -205,7 +243,9 @@ function App() {
                       <td>{row.store_id}</td>
                       <td>{row.product_id}</td>
                       <td>
-                        <span className={row.inventory_level < 100 ? "low" : ""}>
+                        <span
+                          className={row.inventory_level < 100 ? "low" : ""}
+                        >
                           {row.inventory_level}
                         </span>
                       </td>
@@ -263,7 +303,9 @@ function App() {
   }
 
   const maxSeg = Math.max(1, ...segments.map((s) => s.customer_count));
-  const showKpis = currentUser && ["owner", "admin", "store_manager"].includes(currentUser.role);
+  const showKpis =
+    currentUser &&
+    ["owner", "admin", "store_manager"].includes(currentUser.role);
   const kpiFallback = loadingDashboard ? "..." : "—";
 
   return (
@@ -288,9 +330,17 @@ function App() {
 
       {token ? (
         <div className="dashboard">
-          {loadingDashboard && <p className="status-message" role="status">Loading dashboard…</p>}
-          {dashboardError && <div className="app-error" role="alert">{dashboardError}</div>}
-          
+          {loadingDashboard && (
+            <p className="status-message" role="status">
+              Loading dashboard…
+            </p>
+          )}
+          {dashboardError && (
+            <div className="app-error" role="alert">
+              {dashboardError}
+            </div>
+          )}
+
           {showKpis && (
             <div className="kpi-row">
               <div className="kpi-card">
@@ -298,7 +348,9 @@ function App() {
                 <div>
                   <p className="kpi-label">Total units sold</p>
                   <p className="kpi-value">
-                    {summary ? Number(summary.total_units_sold || 0).toLocaleString() : kpiFallback}
+                    {summary
+                      ? Number(summary.total_units_sold || 0).toLocaleString()
+                      : kpiFallback}
                   </p>
                 </div>
               </div>
@@ -307,7 +359,9 @@ function App() {
                 <div>
                   <p className="kpi-label">Total inventory</p>
                   <p className="kpi-value">
-                    {summary ? Number(summary.total_inventory || 0).toLocaleString() : kpiFallback}
+                    {summary
+                      ? Number(summary.total_inventory || 0).toLocaleString()
+                      : kpiFallback}
                   </p>
                 </div>
               </div>
@@ -316,7 +370,9 @@ function App() {
                 <div>
                   <p className="kpi-label">Low stock items</p>
                   <p className="kpi-value">
-                    {summary ? Number(summary.low_stock_count || 0).toLocaleString() : kpiFallback}
+                    {summary
+                      ? Number(summary.low_stock_count || 0).toLocaleString()
+                      : kpiFallback}
                   </p>
                 </div>
               </div>
@@ -353,13 +409,15 @@ function App() {
                   <div className="panel-header">
                     <h2>Sales forecast</h2>
                   </div>
-                  <p className="kpi-label" style={{ marginTop: '0.25rem' }}>
+                  <p className="kpi-label" style={{ marginTop: "0.25rem" }}>
                     Predicted revenue ({forecast.period})
                   </p>
-                  <p className="kpi-value" style={{ margin: '0.35rem 0' }}>
+                  <p className="kpi-value" style={{ margin: "0.35rem 0" }}>
                     ${Number(forecast.predicted_revenue || 0).toLocaleString()}
                   </p>
-                  <p className="kpi-label" style={{ marginTop: '0.75rem' }}>Model: {forecast.model_used}</p>
+                  <p className="kpi-label" style={{ marginTop: "0.75rem" }}>
+                    Model: {forecast.model_used}
+                  </p>
                 </div>
               )}
             </div>
@@ -368,20 +426,29 @@ function App() {
           {renderMainPanel()}
 
           {currentUser && (
-            <M3Panels token={token} role={currentUser.role} onSessionExpired={expireSession} />
+            <M3Panels
+              token={token}
+              role={currentUser.role}
+              onSessionExpired={expireSession}
+            />
           )}
         </div>
       ) : (
         <div className="login-wrap">
           <div className="login-hero">
-            <h2>Intelligent Retail <span>Analytics & Forecasting</span></h2>
+            <h2>
+              Intelligent Retail <span>Analytics & Forecasting</span>
+            </h2>
             <p>
-              MarketMind AI provides real-time demand forecasting, customer segmentation, churn prediction, and automated anomaly detection.
+              MarketMind AI provides real-time demand forecasting, customer
+              segmentation, churn prediction, and automated anomaly detection.
             </p>
             <div className="login-features">
               <span className="login-feature-pill">✦ Role-Based Access</span>
               <span className="login-feature-pill">✦ XGBoost Forecasting</span>
-              <span className="login-feature-pill">✦ Smart Recommendations</span>
+              <span className="login-feature-pill">
+                ✦ Smart Recommendations
+              </span>
             </div>
           </div>
           <div className="login-container">
@@ -400,7 +467,11 @@ function App() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              {loginError && <p className="m3-error login-error" role="alert">{loginError}</p>}
+              {loginError && (
+                <p className="m3-error login-error" role="alert">
+                  {loginError}
+                </p>
+              )}
               <button type="submit">Sign in</button>
             </form>
           </div>
