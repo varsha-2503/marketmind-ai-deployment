@@ -1,8 +1,15 @@
-from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine
-load_dotenv()
-DB_URL = os.getenv("DATABASE_URL", "")
-if DB_URL.startswith("postgres://"):
-    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
-engine = create_engine(DB_URL)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Handle Render's postgres:// prefix quirk if necessary
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
